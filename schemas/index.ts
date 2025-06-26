@@ -7,6 +7,17 @@ export const LoginSchema = z.object({
   password: z.string().min(1, { message: "Password is required" }),
 });
 
+export const PasswordSchema = z
+  .object({
+    password: z.string().min(8, { message: "Password is required" }),
+    confirmPassword: z
+      .string()
+      .min(8, { message: "Confirm password is required" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords must match",
+  });
+
 export const RegisterSchema = z
   .object({
     email: z
@@ -19,3 +30,9 @@ export const RegisterSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords must match",
   });
+
+export const ResetSchema = z.object({
+  email: z
+    .string({ invalid_type_error: "Email must be a valid email address" })
+    .email("Email is required"),
+});
