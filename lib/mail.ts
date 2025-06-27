@@ -27,3 +27,13 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
                <p>If you did not request this, please ignore this email.</p>`,
   });
 };
+
+export const sendTwoFactorEmail = async (email: string, token: string) => {
+  await resend.emails.send({
+    from: "onboarding@resend.dev",
+    to: email,
+    subject: "Your two-factor authentication code",
+    html: `<p>Your two-factor authentication code is: <strong>${token}</strong></p>
+               <p>This code is valid for 5 minutes. If you did not request this, please ignore this email.</p>`,
+  });
+};

@@ -4,7 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
 import { getUserById } from "./data/user";
 import { UserRole } from "@prisma/client";
-
+import { getTwoFactorConfirmationByUserId } from "./data/two-factor-confirmation";
 declare module "next-auth" {
   interface Session {
     user: {
@@ -35,6 +35,7 @@ export const {
   },
   callbacks: {
     async signIn({ user, account }) {
+      console.log("SignIn callback called with user:", user);
       if (account?.provider !== "credentials") {
         return true;
       }
@@ -42,10 +43,22 @@ export const {
       if (!existingUser || !existingUser.emailVerified) {
         return false; // Prevent sign-in if user does not exist or email is not verified
       }
+
+      if (existingUser.isTwoFactorEnabled) {
+        const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(
+          existingUser.id
+        );
+        if (!twoFactorConfirmation) {
+          return false; // Prevent sign-in if two-factor confirmation does not exist
+        }
+        // TODO: DELETE two factor confirmation after sign-in
+        await db.twoFactorConfirmation.delete({
+          where: { id: twoFactorConfirmation.id },
+        });
+      }
       return true;
     },
     async session({ token, session }) {
-      console.log({ sessionToken: token });
       if (token.sub && session.user) {
         session.user.id = token.sub;
       }

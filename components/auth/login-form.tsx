@@ -2,7 +2,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CardWrapper } from "./card-wrapper";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Form,
   FormControl,
@@ -20,11 +20,13 @@ import { FormError } from "../form-error";
 import { FormSuccess } from "../form-success";
 import { loginAction } from "@/actions/login";
 import Link from "next/link";
+import { DEFAULT_LOGIN_REDIRECT } from "@/routes";
 export const LoginForm = () => {
   const [isPending, startTransition] = useTransition();
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
-
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlError =
     searchParams.get("error") === "OAuthAccountNotLinked"
@@ -35,6 +37,7 @@ export const LoginForm = () => {
     defaultValues: {
       email: "",
       password: "",
+      code: "",
     },
   });
 
@@ -44,11 +47,28 @@ export const LoginForm = () => {
     if (isPending) return; // Prevent multiple submissions while pending
     // Start a transition to handle the login action
     startTransition(async () => {
-      const data = await loginAction(values);
-      setError(data?.error);
-      setSuccess(data?.success);
+      try {
+        const data = await loginAction(values);
+        console.log("Login action response:", data);
+        if (data?.error) {
+          form.reset();
+          setError(data?.error);
+        }
+        if (data?.twoFactor) {
+          setShowTwoFactor(true);
+          return;
+        }
+        if (data?.success && data?.redirectTo) {
+          form.reset();
+          setSuccess(data?.success);
+          router.push(DEFAULT_LOGIN_REDIRECT);
+        }
+      } catch (err) {
+        console.log("Error during login action:", err);
+        setError("An unexpected error occurred. Please try again.");
+        // Handle login logic here, e.g., call an API to log in the user
+      }
     });
-    // Handle login logic here, e.g., call an API to log in the user
   };
   return (
     <CardWrapper
@@ -60,55 +80,77 @@ export const LoginForm = () => {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="joh.doe@example.com"
-                      type="email"
-                      disabled={isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      disabled={isPending}
-                      placeholder="******"
-                      type="password"
-                    />
-                  </FormControl>
-                  <Button
-                    size={"sm"}
-                    variant="link"
-                    className="px-0 font-normal"
-                    asChild
-                  >
-                    <Link href="/auth/reset">Forgot password?</Link>
-                  </Button>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!showTwoFactor ? (
+              <>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="joh.doe@example.com"
+                          type="email"
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          disabled={isPending}
+                          placeholder="******"
+                          type="password"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <Button
+                        size={"sm"}
+                        variant="link"
+                        className="px-0 font-normal"
+                        asChild
+                      >
+                        <Link href="/auth/reset">Forgot password?</Link>
+                      </Button>
+                    </FormItem>
+                  )}
+                />
+              </>
+            ) : (
+              <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Two Factor Code</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="123456"
+                        disabled={isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
           <FormSuccess message={success} />
           <FormError message={error || urlError} />
           <Button disabled={isPending} type="submit" className="w-full">
-            Login
+            {showTwoFactor ? "Confirm" : "Login"}
           </Button>
         </form>
       </Form>

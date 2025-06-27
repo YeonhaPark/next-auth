@@ -5,6 +5,7 @@ export const LoginSchema = z.object({
     .string({ invalid_type_error: "Email must be a valid email address" })
     .email("Email is required"),
   password: z.string().min(1, { message: "Password is required" }),
+  code: z.optional(z.string()),
 });
 
 export const PasswordSchema = z
