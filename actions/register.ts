@@ -15,7 +15,7 @@ export const registerAction = async (
     return { error: "Invalid fields" };
   }
 
-  const { email, password, username } = validatedFields.data;
+  const { email, password, name } = validatedFields.data;
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const existingUser = await getUserByEmail(email);
@@ -27,7 +27,7 @@ export const registerAction = async (
     data: {
       email,
       password: hashedPassword,
-      username,
+      name,
     },
   });
 

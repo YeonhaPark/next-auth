@@ -28,7 +28,7 @@ export const RegisterForm = () => {
       email: "",
       password: "",
       confirmPassword: "",
-      username: "",
+      name: "",
     },
   });
 
@@ -111,10 +111,10 @@ export const RegisterForm = () => {
 
             <FormField
               control={form.control}
-              name="username"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
