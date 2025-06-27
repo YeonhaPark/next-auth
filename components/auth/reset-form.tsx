@@ -33,7 +33,6 @@ export const ResetForm = () => {
   const onSubmit = async (values: z.infer<typeof ResetSchema>) => {
     setSuccess("");
     setError("");
-    console.log("ResetForm onSubmit", values);
     if (isPending) return; // Prevent multiple submissions while pending
     // Start a transition to handle the login action
     startTransition(async () => {

@@ -2,7 +2,7 @@ import NextAuth, { type DefaultSession } from "next-auth";
 import authConfig from "./auth.config";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
-import { getUserById } from "./data/user";
+import { getUserByEmail, getUserById } from "./data/user";
 import { UserRole } from "@prisma/client";
 import { getTwoFactorConfirmationByUserId } from "./data/two-factor-confirmation";
 declare module "next-auth" {
@@ -35,11 +35,15 @@ export const {
   },
   callbacks: {
     async signIn({ user, account }) {
-      console.log("SignIn callback called with user:", user);
+      const existingUser = await getUserById(user.id);
       if (account?.provider !== "credentials") {
+        // User attempting to sign in with a third-party provider while already signed in with credentials
+        if (existingUser && !existingUser.emailVerified) {
+          throw new Error("Email already in use with credentials login.");
+        }
+
         return true;
       }
-      const existingUser = await getUserById(user.id);
       if (!existingUser || !existingUser.emailVerified) {
         return false; // Prevent sign-in if user does not exist or email is not verified
       }
