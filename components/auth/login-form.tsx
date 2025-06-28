@@ -20,14 +20,18 @@ import { FormError } from "../form-error";
 import { FormSuccess } from "../form-success";
 import { loginAction } from "@/actions/login";
 import Link from "next/link";
-import { DEFAULT_LOGIN_REDIRECT } from "@/routes";
+
 export const LoginForm = () => {
   const [isPending, startTransition] = useTransition();
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
+
   const router = useRouter();
+
   const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || undefined;
+
   const urlError =
     searchParams.get("error") === "OAuthAccountNotLinked"
       ? "Email already in use with different provider"
@@ -48,8 +52,7 @@ export const LoginForm = () => {
     // Start a transition to handle the login action
     startTransition(async () => {
       try {
-        const data = await loginAction(values);
-        console.log("Login action response:", data);
+        const data = await loginAction(values, callbackUrl);
         if (data?.error) {
           form.reset();
           setError(data?.error);
@@ -61,7 +64,7 @@ export const LoginForm = () => {
         if (data?.success && data?.redirectTo) {
           form.reset();
           setSuccess(data?.success);
-          router.push(DEFAULT_LOGIN_REDIRECT);
+          router.push(data.redirectTo);
         }
       } catch (err) {
         console.log("Error during login action:", err);
