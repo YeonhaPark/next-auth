@@ -29,6 +29,9 @@ export const {
   },
   callbacks: {
     async signIn({ user, account }) {
+      if (!user.id) {
+        return false; // Prevent sign-in if user ID is missing
+      }
       const existingUser = await getUserById(user.id);
       if (account?.provider !== "credentials") {
         // User attempting to sign in with a third-party provider while already signed in with credentials
